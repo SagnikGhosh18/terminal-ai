@@ -76,6 +76,8 @@ async function main() {
     if (tool_calls) {
       const { fnName, args } = parseToolCall(tool_calls[0]);
       performToolCall(fnName, args);
+    } else {
+      console.error("No tool call found for this command", tool_calls);
     }
   }
 
