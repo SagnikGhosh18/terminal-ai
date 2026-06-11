@@ -82,6 +82,7 @@ async function main() {
         const functionArguments = JSON.parse(toolCalls[0].function.arguments);
         const filePath = functionArguments.file_path;
         const fileContents = await Bun.file(filePath).text();
+        process.stdout.write(fileContents);
         const newMsg = {
           "role": "tool",
           "tool_call_id": "call_abc123",
