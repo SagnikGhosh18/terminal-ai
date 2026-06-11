@@ -2,8 +2,8 @@ import OpenAI from "openai";
 import fs from 'node:fs';
 
 function parseToolCall(tool_call = {}) {
-  const fnName = tool_call?.function?.name;
-  const args = JSON.parse(tool_call?.function?.arguments);
+  const fnName = tool_call?.function?.name || '';
+  const args = (typeof tool_call?.function?.arguments === 'string') ? JSON.parse(tool_call?.function?.arguments) : [];
   return { fnName, args };
 }
 
