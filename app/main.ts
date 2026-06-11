@@ -44,61 +44,68 @@ async function main() {
 
   const messages = [{ role: "user", content: prompt }];
 
+  const tools = [
+    {
+      type: "function",
+      function: {
+        name: "Read",
+        description: "Read and return the contents of a file",
+        parameters: {
+          type: "object",
+          properties: {
+            file_path: {
+              type: "string",
+              description: "The path to the file to read",
+            },
+          },
+          required: ["file_path"],
+        },
+      },
+    },
+  ];
+
   while (true) {
     const response = await client.chat.completions.create({
       model: "anthropic/claude-haiku-4.5",
-      messages: [...messages],
-      tools: [
-        {
-          "type": "function",
-          "function": {
-            "name": "Read",
-            "description": "Read and return the contents of a file",
-            "parameters": {
-              "type": "object",
-              "properties": {
-                "file_path": {
-                  "type": "string",
-                  "description": "The path to the file to read"
-                }
-              },
-              "required": ["file_path"]
-            }
-          }
-        }
-      ]
+      messages: messages,
+      tools: tools,
     });
 
     if (!response.choices || response.choices.length === 0) {
       throw new Error("no choices in response");
     }
 
-    messages.push(response.choices[0].message);
+    // You can use print statements as follows for debugging, they'll be visible when running tests.
+    const choice = response.choices[0];
+    const message = choice.message;
 
-    // Fetch Tool Call
-    const toolCalls = response.choices[0].message.tool_calls;
-    if (toolCalls && toolCalls.length > 0) {
-      if (toolCalls[0].function.name === "Read") {
-        const functionArguments = JSON.parse(toolCalls[0].function.arguments);
-        const filePath = functionArguments.file_path;
-        const fileContents = await Bun.file(filePath).text();
-        process.stdout.write(fileContents);
-        const newMsg = {
-          "role": "tool",
-          "tool_call_id": "call_abc123",
-          "content":fileContents
+    messages.push({
+      role: "assistant",
+      content: message.content ?? null,
+      ...(message.tool_calls ? { tool_calls: message.tool_calls } : {}),
+    });
+
+    if (message.tool_calls && message.tool_calls.length > 0) {
+      for (const toolCall of message.tool_calls) {
+        const functionName = toolCall.function.name;
+        const args = JSON.parse(toolCall.function.arguments);
+
+        if (functionName === "Read") {
+          const fileContent = fs.readFileSync(args.file_path, "utf-8");
+          messages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            content: fileContent,
+          });
         }
-        messages.push(newMsg);
-      } else {
-        console.error("No tool call found for this command", toolCalls);
       }
-    } else {
-      const message = response.choices[0].message;
-      if (message.content) {
-        process.stdout.write(message.content);
-      }
-      break;
+      continue;
     }
+
+    if (message.content) {
+      console.log(message.content);
+    }
+    break;
   }
   // You can use print statements as follows for debugging, they'll be visible when running tests.
   console.error("Logs from your program will appear here!");
