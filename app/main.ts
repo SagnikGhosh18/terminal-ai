@@ -1,4 +1,28 @@
 import OpenAI from "openai";
+import fs from 'node:fs';
+
+function parseToolCall(tool_call = {}) {
+  const fnName = tool_call?.function?.name;
+  const args = JSON.parse(tool_call?.function?.arguments);
+  return { fnName, args };
+}
+
+function performToolCall(functionName, args) {
+  switch (functionName) {
+    case 'Read':
+      if (!args.file_path) {
+        throw new Error("File path mandatory");
+      }
+      const { file_path } = args;
+      fs.readFile(file_path, 'utf8', (err, data) => {
+        if (err) {
+          console.error(err);
+          return;
+        }
+        console.log(data);
+      });
+  }
+}
 
 async function main() {
   const [, , flag, prompt] = process.argv;
@@ -44,6 +68,15 @@ async function main() {
 
   if (!response.choices || response.choices.length === 0) {
     throw new Error("no choices in response");
+  }
+
+  if (response.choices) {
+    const choice = response.choices?.[0];
+    const { tool_calls = [] } = choice?.message;
+    if (tool_calls) {
+      const { fnName, args } = parseToolCall(tool_calls[0]);
+      performToolCall(fnName, args);
+    }
   }
 
   // You can use print statements as follows for debugging, they'll be visible when running tests.
