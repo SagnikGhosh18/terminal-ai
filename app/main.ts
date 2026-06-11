@@ -69,12 +69,11 @@ async function main() {
       ]
     });
 
-    // Add response to messages
-    messages.push(response);
-
     if (!response.choices || response.choices.length === 0) {
       throw new Error("no choices in response");
     }
+
+    messages.push(response.choices[0].message);
 
     // Fetch Tool Call
     const toolCalls = response.choices[0].message.tool_calls;
