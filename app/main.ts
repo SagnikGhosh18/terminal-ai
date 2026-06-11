@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import fs from 'node:fs';
+import { execSync } from 'node:child_process';
 
 function parseToolCall(tool_call = {}) {
   const fnName = tool_call?.function?.name || '';
@@ -82,6 +83,23 @@ async function main() {
           }
         }
       }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "Bash",
+        "description": "Execute a shell command",
+        "parameters": {
+          "type": "object",
+          "required": ["command"],
+          "properties": {
+            "command": {
+              "type": "string",
+              "description": "The command to execute"
+            }
+          }
+        }
+      }
     }
   ];
 
@@ -118,7 +136,7 @@ async function main() {
             tool_call_id: toolCall.id,
             content: fileContent,
           });
-        } else if(functionName === "Write") {
+        } else if (functionName === "Write") {
           const content = args.content;
           const file_path = args.file_path;
           fs.writeFileSync(file_path, content);
@@ -127,6 +145,15 @@ async function main() {
             tool_call_id: toolCall.id,
             content: content,
           });
+        } else if (functionName === "Bash") {
+          const command = args.command;
+          const stdout = execSync(command);
+          messages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            content: stdout,
+          });
+          // console.log(stdout);
         }
       }
       continue;
