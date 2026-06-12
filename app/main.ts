@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { performToolCall } from "./utils";
 import { tools } from "./tools";
 
@@ -20,7 +21,7 @@ async function main() {
     baseURL: baseURL,
   });
 
-  let messages = [{ role: "user", content: prompt }];
+  const messages: ChatCompletionMessageParam[] = [{ role: "user", content: prompt }];
 
   while (true) {
     const response = await client.chat.completions.create({
@@ -48,7 +49,7 @@ async function main() {
         const functionName = toolCall.function.name;
         const args = JSON.parse(toolCall.function.arguments);
 
-        messages = [...performToolCall(toolCall, functionName, args, messages)];
+        performToolCall(toolCall, functionName, args, messages);
       }
       continue;
     }

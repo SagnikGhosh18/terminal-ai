@@ -1,7 +1,15 @@
 import fs from 'node:fs';
 import { execSync } from 'node:child_process';
+import type { ChatCompletionMessageParam, ChatCompletionMessageToolCall } from 'openai/resources/chat/completions';
 
-function performToolCall(toolCall, functionName, args, messages) {
+type ToolArgs = Record<string, string>;
+
+function performToolCall(
+    toolCall: ChatCompletionMessageToolCall,
+    functionName: string,
+    args: ToolArgs,
+    messages: ChatCompletionMessageParam[]
+): ChatCompletionMessageParam[] {
     if (functionName === "Read") {
         const fileContent = fs.readFileSync(args.file_path, "utf-8");
         messages.push({
