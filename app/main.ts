@@ -146,14 +146,17 @@ async function main() {
             content: content,
           });
         } else if (functionName === "Bash") {
-          const command = args.command;
-          const stdout = execSync(command);
+          let output = "";
+          try {
+            output = execSync(args.command, { encoding: "utf-8" });
+          } catch (err) {
+            output = err.stderr ?? err.message;
+          }
           messages.push({
             role: "tool",
             tool_call_id: toolCall.id,
-            content: stdout,
+            content: output,
           });
-          // console.log(stdout);
         }
       }
       continue;
